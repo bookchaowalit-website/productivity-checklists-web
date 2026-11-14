@@ -58,6 +58,7 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
   const [ready, setReady] = useState(false);
   const [undo, setUndo] = useState<boolean[][] | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [toastFocused, setToastFocused] = useState(false);
   const undoRef = useRef<HTMLButtonElement>(null);
   const resetRef = useRef<HTMLButtonElement>(null);
   // Reset is disabled until the restored ticks render, so focus it after that render, not inline.
@@ -90,12 +91,13 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
     } catch { /* Storage can be full or blocked; the run still works in memory. */ }
   }, [checked, ready, storageKey]);
 
+  useEffect(() => { if (undo) undoRef.current?.focus(); }, [undo]);
+  // The toast closes after 8 s, but never while it holds focus (it would drop the keyboard user).
   useEffect(() => {
-    if (!undo) return;
-    undoRef.current?.focus();
+    if (!undo || toastFocused) return;
     const timer = window.setTimeout(() => setUndo(null), 8000);
     return () => window.clearTimeout(timer);
-  }, [undo]);
+  }, [undo, toastFocused]);
 
   useEffect(() => {
     if (!focusResetNext.current) return;
@@ -118,6 +120,7 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
   function restore() {
     if (undo) setChecked(undo);
     setUndo(null);
+    setToastFocused(false);
     setAnnouncement("Run restored.");
     focusResetNext.current = true;
   }
@@ -140,12 +143,15 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
             {section.map((item, itemIndex) => {
               const done = checked[sectionIndex]?.[itemIndex] ?? false;
               return (
-                <li className="as-row as-row-check as-row-step" key={`${itemIndex}-${item}`} data-done={done ? "true" : undefined}>
-                  <label className="as-check">
-                    <input ref={sectionIndex === 0 && itemIndex === 0 ? firstCheck : undefined} type="checkbox" checked={done} onChange={() => toggle(sectionIndex, itemIndex)} aria-label={item} />
-                    <span aria-hidden="true" />
+                <li className="as-row as-row-step" key={`${itemIndex}-${item}`} data-done={done ? "true" : undefined}>
+                  {/* The whole row is the label, so tapping the step text ticks it too. */}
+                  <label className="as-step-label">
+                    <span className="as-check">
+                      <input ref={sectionIndex === 0 && itemIndex === 0 ? firstCheck : undefined} type="checkbox" checked={done} onChange={() => toggle(sectionIndex, itemIndex)} />
+                      <span aria-hidden="true" />
+                    </span>
+                    <span className="as-step-text">{item}</span>
                   </label>
-                  <h3>{item}</h3>
                 </li>
               );
             })}
@@ -155,7 +161,14 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
 
       <p className="as-sr" role="status" aria-live="polite">{announcement}</p>
       {undo ? (
-        <div className="as-toast" role="group" aria-label="Undo reset" onKeyDown={(event) => { if (event.key === "Escape") { setUndo(null); firstCheck.current?.focus(); } }}>
+        <div
+          className="as-toast"
+          role="group"
+          aria-label="Undo reset"
+          onFocus={() => setToastFocused(true)}
+          onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setToastFocused(false); }}
+          onKeyDown={(event) => { if (event.key === "Escape") { setUndo(null); setToastFocused(false); firstCheck.current?.focus(); } }}
+        >
           <span>Run reset</span>
           <button ref={undoRef} type="button" className="as-plain" onClick={restore}>Undo</button>
         </div>

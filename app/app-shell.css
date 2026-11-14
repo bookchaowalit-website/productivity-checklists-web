@@ -189,3 +189,9 @@
 .as-row-step h3 { font-weight: 500; }
 @media (max-width: 760px) { .as-row-step { grid-template-columns: 44px minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) { .as-progress span { transition: none; } }
+/* A checklist step is one big label: the round check and the text both tick it. */
+.as-row-step { display: block; padding: 0; }
+.as-step-label { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 56px; padding: 6px 16px 6px 4px; cursor: pointer; }
+.as-step-text { font-size: 16px; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.as-row[data-done="true"] .as-step-text { color: var(--as-muted); text-decoration: line-through; }
+.as-step-label:hover { background: var(--as-hover); }

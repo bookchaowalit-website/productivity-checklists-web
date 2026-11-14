@@ -23,7 +23,8 @@ function type(el: HTMLInputElement, value: string) {
     el.dispatchEvent(new Event("input", { bubbles: true }));
   });
 }
-const tick = (label: string) => act(() => { $<HTMLInputElement>(`input[aria-label="${label}"]`)!.click(); });
+const stepInput = (text: string) => [...host.querySelectorAll(".as-step-label")].find((l) => l.textContent === text)!.querySelector("input")!;
+const tick = (text: string) => act(() => { stepInput(text).click(); });
 
 beforeEach(() => {
   localStorage.clear();
@@ -84,18 +85,41 @@ describe("ChecklistRunner", () => {
     expect(document.activeElement?.textContent).toBe("Reset");
   });
 
-  it("Escape closes the undo toast; it also goes away after eight seconds", () => {
+  it("Escape closes the undo toast; once focus leaves it, it goes away after eight seconds", () => {
     mount(<ChecklistRunner checklist={launch} />);
     tick("Deploy");
     act(() => { $<HTMLButtonElement>(".as-progress-card button")!.click(); });
     act(() => { $(".as-toast")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
     expect($(".as-toast")).toBeNull();
     expect(host.textContent).toContain("0 of 3 checks clear");
-    expect(document.activeElement?.getAttribute("aria-label")).toBe("Write notes");
+    expect(document.activeElement).toBe(stepInput("Write notes"));
 
     vi.useFakeTimers();
     tick("Deploy");
     act(() => { $<HTMLButtonElement>(".as-progress-card button")!.click(); });
+    act(() => { stepInput("Deploy").focus(); });
+    act(() => { vi.advanceTimersByTime(8000); });
+    expect($(".as-toast")).toBeNull();
+  });
+});
+
+describe("review fixes", () => {
+  it("clicking the step text ticks it", () => {
+    mount(<ChecklistRunner checklist={launch} />);
+    act(() => { ([...host.querySelectorAll(".as-step-text")].find((t) => t.textContent === "Book room") as HTMLElement).click(); });
+    expect(stepInput("Book room").checked).toBe(true);
+    expect(host.textContent).toContain("1 of 3 checks clear");
+  });
+
+  it("the toast stays while Undo has focus and closes once focus leaves", () => {
+    mount(<ChecklistRunner checklist={launch} />);
+    tick("Deploy");
+    vi.useFakeTimers();
+    act(() => { $<HTMLButtonElement>(".as-progress-card button")!.click(); });
+    act(() => { $<HTMLButtonElement>(".as-toast button")!.focus(); });
+    act(() => { vi.advanceTimersByTime(9000); });
+    expect($(".as-toast")).not.toBeNull();
+    act(() => { stepInput("Deploy").focus(); });
     act(() => { vi.advanceTimersByTime(8000); });
     expect($(".as-toast")).toBeNull();
   });
