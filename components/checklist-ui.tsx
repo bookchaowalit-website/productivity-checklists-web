@@ -1,27 +1,69 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Pill } from "@/components/app-shell";
 import { checksLabel, countChecks, progressPercent, restoreProgress, searchChecklists } from "@/lib/checklist";
 import type { Checklist } from "@/lib/checklist";
-import { useEffect, useMemo, useState } from "react";
+import { PRIORITY_TONE } from "@/components/priority";
+const label = (value: string) => value[0].toUpperCase() + value.slice(1);
 
-export function ChecklistCard({ checklist, index }: { checklist: Checklist; index: number }) {
+/** One checklist as a list row: title, description, category · checks, priority pill, chevron. */
+export function ChecklistRow({ checklist }: { checklist: Checklist }) {
   const count = countChecks(checklist);
-
   return (
-    <Link href={`/checklists/${checklist.slug}`} className={`checklist-card priority-${checklist.priority}`}>
-      <div className="card-top"><span>0{index + 1}</span><b>{checklist.priority}</b></div>
-      <h3>{checklist.title}</h3>
-      <p>{checklist.description}</p>
-      <div className="card-bottom"><span>{checklist.category}</span><span>{count} checks <span aria-hidden="true">↗</span></span></div>
-    </Link>
+    <li>
+      <Link href={`/checklists/${checklist.slug}`} className="as-row as-row-link">
+        <div>
+          <h3>{checklist.title}</h3>
+          <p>{checklist.description}</p>
+          <p className="as-row-meta">{label(checklist.category)} · {count} {count === 1 ? "check" : "checks"}</p>
+        </div>
+        <Pill tone={PRIORITY_TONE[checklist.priority]}>{label(checklist.priority)}</Pill>
+        <span className="as-chevron" aria-hidden="true">›</span>
+      </Link>
+    </li>
   );
 }
 
+export function ChecklistIndex({ checklists }: { checklists: Checklist[] }) {
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => searchChecklists(checklists, query), [checklists, query]);
+
+  return (
+    <>
+      <div className="as-head">
+        <p aria-live="polite">{results.length} of {checklists.length} {checklists.length === 1 ? "checklist" : "checklists"}{query.trim() ? ` matching “${query.trim()}”` : ""}</p>
+        <label className="as-search">
+          <span className="as-sr">Search checklists</span>
+          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search checklists" autoComplete="off" />
+        </label>
+      </div>
+      {results.length ? (
+        <ul className="as-list as-list-links" aria-label="Checklists">
+          {results.map((checklist) => <ChecklistRow checklist={checklist} key={checklist.slug} />)}
+        </ul>
+      ) : (
+        <div className="as-list as-empty"><strong>Nothing matches</strong>No checklist mentions “{query.trim()}”. Try another word.</div>
+      )}
+    </>
+  );
+}
+
+/** Run a checklist: round checks per phase, progress, and Reset with a few seconds of Undo. */
 export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
   const sections = useMemo(() => checklist.items.map((section) => section.slice(1)), [checklist.items]);
-  const [checked, setChecked] = useState<boolean[][]>(() => sections.map((section) => section.map(() => false)));
+  const blank = useMemo(() => sections.map((section) => section.map(() => false)), [sections]);
+  const [checked, setChecked] = useState<boolean[][]>(blank);
   const [ready, setReady] = useState(false);
+  const [undo, setUndo] = useState<boolean[][] | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const undoRef = useRef<HTMLButtonElement>(null);
+  const resetRef = useRef<HTMLButtonElement>(null);
+  // Reset is disabled until the restored ticks render, so focus it after that render, not inline.
+  const focusResetNext = useRef(false);
+  // After dismissing the toast the run stays cleared and Reset is disabled, so focus the first step.
+  const firstCheck = useRef<HTMLInputElement>(null);
   const storageKey = `checklist-progress-v2-${checklist.slug}`;
 
   useEffect(() => {
@@ -48,48 +90,76 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
     } catch { /* Storage can be full or blocked; the run still works in memory. */ }
   }, [checked, ready, storageKey]);
 
+  useEffect(() => {
+    if (!undo) return;
+    undoRef.current?.focus();
+    const timer = window.setTimeout(() => setUndo(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [undo]);
+
+  useEffect(() => {
+    if (!focusResetNext.current) return;
+    focusResetNext.current = false;
+    resetRef.current?.focus();
+  }, [checked]);
+
   const total = sections.reduce((sum, section) => sum + section.length, 0);
   const complete = checked.reduce((sum, section) => sum + section.filter(Boolean).length, 0);
   const progress = progressPercent(complete, total);
-  const reset = () => setChecked(sections.map((section) => section.map(() => false)));
+
+  function toggle(sectionIndex: number, itemIndex: number) {
+    setChecked((current) => current.map((row, rowIndex) => rowIndex === sectionIndex ? row.map((value, valueIndex) => valueIndex === itemIndex ? !value : value) : row));
+  }
+  function reset() {
+    setUndo(checked);
+    setChecked(blank);
+    setAnnouncement("Run reset. Undo is available for a few seconds.");
+  }
+  function restore() {
+    if (undo) setChecked(undo);
+    setUndo(null);
+    setAnnouncement("Run restored.");
+    focusResetNext.current = true;
+  }
 
   return (
-    <div className="run-sheet">
-      <div className="run-readout">
-        <div><span className="panel-code">LIVE RUN / {checklist.priority.toUpperCase()}</span><strong>{progress}%</strong><span aria-live="polite">{checksLabel(complete, total)}</span></div>
-        <button type="button" onClick={reset}>Reset run</button>
+    <div className="as-run">
+      <div className="as-progress-card">
+        <div className="as-progress-text">
+          <strong>{progress}%</strong>
+          <span aria-live="polite">{checksLabel(complete, total)}</span>
+        </div>
+        <button ref={resetRef} type="button" className="as-plain" onClick={reset} disabled={complete === 0}>Reset</button>
+        <div className="as-progress" role="progressbar" aria-label={`${progress}% complete`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div>
       </div>
-      <div className="progress-line" role="progressbar" aria-label={`${progress}% complete`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div>
-      <div className="run-sections">
-        {sections.map((section, sectionIndex) => (
-          <section key={sectionIndex} className="run-section" aria-labelledby={`phase-${sectionIndex}`}>
-            <header><span>PHASE 0{sectionIndex + 1}</span><h2 id={`phase-${sectionIndex}`}>{checklist.items[sectionIndex]?.[0] || `Phase ${sectionIndex + 1}`}</h2></header>
-            <ul>{section.map((item, itemIndex) => <li key={`${itemIndex}-${item}`}><label><input type="checkbox" checked={checked[sectionIndex]?.[itemIndex] ?? false} onChange={() => setChecked((current) => current.map((row, rowIndex) => rowIndex === sectionIndex ? row.map((value, valueIndex) => valueIndex === itemIndex ? !value : value) : row))} /><span>{item}</span></label></li>)}</ul>
-          </section>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-export function ChecklistIndex({ checklists }: { checklists: Checklist[] }) {
-  const [query, setQuery] = useState("");
-  const results = useMemo(() => searchChecklists(checklists, query), [checklists, query]);
-
-  return (
-    <>
-      <div className="index-search">
-        <label htmlFor="checklist-search">Search procedures</label>
-        <input id="checklist-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Title, category, or a single check…" autoComplete="off" />
-        <span aria-live="polite">{results.length} of {checklists.length} shown</span>
-      </div>
-      {results.length === 0 ? (
-        <p className="index-empty">No procedure matches “{query}”.</p>
-      ) : (
-        <section className="checklist-grid archive-grid" aria-label="Matching checklists">
-          {results.map((checklist, index) => <ChecklistCard checklist={checklist} index={index} key={checklist.slug} />)}
+      {sections.map((section, sectionIndex) => (
+        <section key={sectionIndex} className="as-phase" aria-labelledby={`phase-${sectionIndex}`}>
+          <h2 id={`phase-${sectionIndex}`}>{checklist.items[sectionIndex]?.[0] || `Phase ${sectionIndex + 1}`}</h2>
+          <ul className="as-list">
+            {section.map((item, itemIndex) => {
+              const done = checked[sectionIndex]?.[itemIndex] ?? false;
+              return (
+                <li className="as-row as-row-check as-row-step" key={`${itemIndex}-${item}`} data-done={done ? "true" : undefined}>
+                  <label className="as-check">
+                    <input ref={sectionIndex === 0 && itemIndex === 0 ? firstCheck : undefined} type="checkbox" checked={done} onChange={() => toggle(sectionIndex, itemIndex)} aria-label={item} />
+                    <span aria-hidden="true" />
+                  </label>
+                  <h3>{item}</h3>
+                </li>
+              );
+            })}
+          </ul>
         </section>
-      )}
-    </>
+      ))}
+
+      <p className="as-sr" role="status" aria-live="polite">{announcement}</p>
+      {undo ? (
+        <div className="as-toast" role="group" aria-label="Undo reset" onKeyDown={(event) => { if (event.key === "Escape") { setUndo(null); firstCheck.current?.focus(); } }}>
+          <span>Run reset</span>
+          <button ref={undoRef} type="button" className="as-plain" onClick={restore}>Undo</button>
+        </div>
+      ) : null}
+    </div>
   );
 }
