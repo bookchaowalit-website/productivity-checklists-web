@@ -9,15 +9,15 @@ describe("pages render the real MDX shelf", () => {
   it("home lists every procedure from content/checklists and the local-progress notice", async () => {
     const checklists = await getAllChecklists();
     const html = renderToString(await Home());
-    expect(html).toContain("Know the next move.");
+    expect(html).toContain("<h1>Checklists</h1>");
+    expect(html).toContain('class="as"');
     for (const checklist of checklists) expect(html).toContain(checklist.title);
-    expect(html).toContain(`Open ${checklists[0].title}`);
     expect(html).toContain("progress stays in this browser");
   });
 
   it("the route book index renders and every slug has a static page", async () => {
     const html = renderToString(await ChecklistsPage());
-    expect(html).toContain("The route book.");
+    expect(html).toContain("<h1>All checklists</h1>");
     const params = await generateStaticParams();
     expect(params.map((param) => param.slug).sort()).toEqual(["content-creation", "job-interview", "project-launch"]);
   });

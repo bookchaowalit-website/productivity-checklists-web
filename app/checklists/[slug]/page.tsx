@@ -1,7 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllChecklists, getChecklistBySlug } from "@/lib/mdx";
 import { ChecklistRunner } from "@/components/checklist-ui";
+import { PRIORITY_TONE } from "@/components/priority";
+import { Pill } from "@/components/app-shell";
+import { PageFrame } from "@/components/page-frame";
 import { countChecks } from "@/lib/checklist";
 import type { Metadata } from "next";
 
@@ -12,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const checklist = await getChecklistBySlug(slug);
   if (!checklist) return {};
   return {
-    title: `${checklist.title} — Preflight checklist`,
+    title: `${checklist.title} — Checklist`,
     description: checklist.description,
     alternates: { canonical: `/checklists/${checklist.slug}` },
     openGraph: { title: checklist.title, description: checklist.description, url: `/checklists/${checklist.slug}` },
@@ -26,5 +28,17 @@ export default async function ChecklistPage({ params }: { params: Promise<{ slug
   const checklist = await getChecklistBySlug(slug);
   if (!checklist) notFound();
   const count = countChecks(checklist);
-  return <main className="flight-desk"><div className="desk-shell"><header className="flight-topbar"><Link href="/" className="flight-mark">PREFLIGHT / DESK</Link><Link href="/checklists" className="flight-back">Back to route book</Link></header><article className="procedure-sheet"><header className="procedure-header"><div><p className="flight-kicker">procedure / {checklist.category}</p><h1>{checklist.title}</h1><p>{checklist.description}</p></div><div className={`priority-stamp priority-${checklist.priority}`}>{checklist.priority}<span>priority</span></div></header><div className="procedure-facts"><span><b>Checks</b>{count}</span><span><b>Phases</b>{checklist.items.length}</span><span><b>Record</b>{checklist.slug}</span></div><ChecklistRunner checklist={checklist} /></article><footer className="flight-footer">The checklist is a personal operating aid. It does not certify safety, readiness, or completion outside this browser.</footer></div></main>;
+  const label = (value: string) => value[0].toUpperCase() + value.slice(1);
+  return (
+    <PageFrame back={{ href: "/checklists", label: "All checklists" }}>
+      <header className="as-intro">
+        <p className="as-eyebrow">{label(checklist.category)} · {count} {count === 1 ? "check" : "checks"} in {checklist.items.length} {checklist.items.length === 1 ? "phase" : "phases"}</p>
+        <h1>{checklist.title}</h1>
+        <p>{checklist.description}</p>
+        <Pill tone={PRIORITY_TONE[checklist.priority]}>{label(checklist.priority)} priority</Pill>
+      </header>
+      <ChecklistRunner checklist={checklist} />
+      <p className="as-note">A personal working aid. It does not certify safety, readiness, or completion outside this browser.</p>
+    </PageFrame>
+  );
 }

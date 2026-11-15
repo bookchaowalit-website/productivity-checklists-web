@@ -1,3 +1,11 @@
+# Checklists — design
+
+Since 2026-11-14 this app uses the shared App shell (`APP-SHELL.md`) as a single-column content
+app: searchable list rows with priority pills, and a run page with round checks per phase,
+a progress bar and Reset with Undo. The earlier "Preflight" theme below is kept for history.
+
+---
+
 # Preflight — Design direction
 
 ## Product surface
