@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/mcp": ["./content/checklists/**/*"],
   },
+  // The old portfolio link page now lives on the main site.
+  async redirects() {
+    return [{ source: "/more-projects", destination: "https://bookchaowalit.com/", permanent: true }];
+  },
 };
 
 export default nextConfig;
