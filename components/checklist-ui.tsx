@@ -28,7 +28,23 @@ export function ChecklistRow({ checklist }: { checklist: Checklist }) {
 
 export function ChecklistIndex({ checklists }: { checklists: Checklist[] }) {
   const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const results = useMemo(() => searchChecklists(checklists, query), [checklists, query]);
+
+  // No checklists published at all: nothing to search, so say so instead of "nothing matches".
+  if (!checklists.length) {
+    return (
+      <div className="as-list as-empty">
+        <strong>No checklists yet</strong>
+        Checklists are published with this site’s content. When one is added it shows up here, ready to run.
+      </div>
+    );
+  }
+
+  function clearSearch() {
+    setQuery("");
+    searchRef.current?.focus();
+  }
 
   return (
     <>
@@ -36,7 +52,7 @@ export function ChecklistIndex({ checklists }: { checklists: Checklist[] }) {
         <p aria-live="polite">{results.length} of {checklists.length} {checklists.length === 1 ? "checklist" : "checklists"}{query.trim() ? ` matching “${query.trim()}”` : ""}</p>
         <label className="as-search">
           <span className="as-sr">Search checklists</span>
-          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search checklists" autoComplete="off" />
+          <input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search checklists" autoComplete="off" />
         </label>
       </div>
       {results.length ? (
@@ -44,7 +60,11 @@ export function ChecklistIndex({ checklists }: { checklists: Checklist[] }) {
           {results.map((checklist) => <ChecklistRow checklist={checklist} key={checklist.slug} />)}
         </ul>
       ) : (
-        <div className="as-list as-empty"><strong>Nothing matches</strong>No checklist mentions “{query.trim()}”. Try another word.</div>
+        <div className="as-list as-empty">
+          <strong>Nothing matches</strong>
+          No checklist mentions “{query.trim()}”. Try another word.
+          <div style={{ marginTop: 8 }}><button type="button" className="as-plain" onClick={clearSearch}>Clear search</button></div>
+        </div>
       )}
     </>
   );

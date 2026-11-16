@@ -48,6 +48,20 @@ describe("ChecklistIndex", () => {
     expect(host.textContent).toContain("1 of 2 checklists matching “posting”");
     type($<HTMLInputElement>("input[type=search]")!, "zzz");
     expect(host.textContent).toContain("Nothing matches");
+    const search = $<HTMLInputElement>("input[type=search]")!;
+    const clear = [...host.querySelectorAll("button")].find((b) => b.textContent === "Clear search")!;
+    act(() => { clear.click(); });
+    expect(search.value).toBe("");
+    expect(document.activeElement).toBe(search);
+    expect(host.querySelectorAll(".as-row h3")).toHaveLength(2);
+    expect(host.textContent).not.toContain("Nothing matches");
+  });
+
+  it("with no checklists at all shows a first-run state, not a search miss", () => {
+    mount(<ChecklistIndex checklists={[]} />);
+    expect(host.textContent).toContain("No checklists yet");
+    expect(host.textContent).not.toContain("No checklist mentions");
+    expect($("input[type=search]")).toBeNull();
   });
 });
 
