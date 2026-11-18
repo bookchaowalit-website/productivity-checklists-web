@@ -13,3 +13,11 @@ describe("round checks in forced colors", () => {
     expect(block).toMatch(/\.as-check span \{[^}]*display: none/);
   });
 });
+
+describe("round check focus ring", () => {
+  it("does not depend on :has() (a sibling rule draws it too)", () => {
+    const css = readFileSync(`${process.cwd()}/app/app-shell.css`, "utf8");
+    // Its own rule, not in a list with :has() (an unsupported selector would drop the whole list).
+    expect(css).toMatch(/\n\.as-check input:focus-visible \+ span \{ outline: 3px solid var\(--as-focus\)/);
+  });
+});

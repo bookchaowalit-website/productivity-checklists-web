@@ -158,6 +158,9 @@
 /* Unchecked ring uses --as-muted: 5.1:1 on white, 6.9:1 on dark (--as-line was 1.5:1, under the 3:1 non-text minimum). */
 .as-check span { width: 24px; height: 24px; border: 2px solid var(--as-muted); border-radius: 50%; transition: background-color .15s ease, border-color .15s ease; }
 .as-check input:checked + span { border-color: var(--as-button); background: var(--as-button) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center / 16px no-repeat; }
+/* The span follows the input, so this sibling rule works in browsers without :has() (Firefox before 121).
+   Keep it a separate rule: one unsupported selector in a list drops the whole list. */
+.as-check input:focus-visible + span { outline: 3px solid var(--as-focus); outline-offset: 2px; }
 .as-check:has(input:focus-visible) span { outline: 3px solid var(--as-focus); outline-offset: 2px; }
 /* Forced colors (Windows high contrast) drop the blue fill but keep the white tick, so a ticked step looks
    unticked. There, show the browser's own checkbox, which the system draws in its own colours. */
