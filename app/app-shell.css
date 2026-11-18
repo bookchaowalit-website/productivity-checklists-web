@@ -204,3 +204,6 @@
 .as-step-text { font-size: 16px; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
 .as-row[data-done="true"] .as-step-text { color: var(--as-muted); text-decoration: line-through; }
 .as-step-label:hover { background: var(--as-hover); }
+
+/* The top bar is sticky: keep skip-link targets and keyboard-focused controls clear of it when the page scrolls to them. */
+html { scroll-padding-top: 64px; scroll-padding-bottom: 16px; }
