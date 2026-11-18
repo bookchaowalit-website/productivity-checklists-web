@@ -159,6 +159,12 @@
 .as-check span { width: 24px; height: 24px; border: 2px solid var(--as-muted); border-radius: 50%; transition: background-color .15s ease, border-color .15s ease; }
 .as-check input:checked + span { border-color: var(--as-button); background: var(--as-button) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center / 16px no-repeat; }
 .as-check:has(input:focus-visible) span { outline: 3px solid var(--as-focus); outline-offset: 2px; }
+/* Forced colors (Windows high contrast) drop the blue fill but keep the white tick, so a ticked step looks
+   unticked. There, show the browser's own checkbox, which the system draws in its own colours. */
+@media (forced-colors: active) {
+  .as-check input { position: static; width: 24px; height: 24px; opacity: 1; appearance: auto; }
+  .as-check span { display: none; }
+}
 .as-row[data-done="true"] h3 { color: var(--as-muted); text-decoration: line-through; }
 .as-chips { display: flex; flex-wrap: wrap; gap: 12px 24px; }
 @media (max-width: 760px) {
