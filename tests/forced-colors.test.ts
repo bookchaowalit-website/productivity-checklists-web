@@ -21,3 +21,13 @@ describe("round check focus ring", () => {
     expect(css).toMatch(/\n\.as-check input:focus-visible \+ span \{ outline: 3px solid var\(--as-focus\)/);
   });
 });
+
+describe("progress bar in forced colors", () => {
+  it("paints the track and the fill with different system colours", () => {
+    const css = readFileSync(`${process.cwd()}/app/app-shell.css`, "utf8");
+    const start = css.indexOf("@media (forced-colors: active)");
+    const block = css.slice(start, css.indexOf("\n}\n", start));
+    expect(block).toMatch(/\.as-progress \{[^}]*forced-color-adjust: none[^}]*background: Canvas[^}]*border: 1px solid CanvasText/);
+    expect(block).toMatch(/\.as-progress span \{[^}]*background: Highlight/);
+  });
+});
