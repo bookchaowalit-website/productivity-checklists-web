@@ -6,6 +6,8 @@ import { Pill } from "@/components/app-shell";
 import { checksLabel, countChecks, progressPercent, restoreProgress, searchChecklists } from "@/lib/checklist";
 import type { Checklist } from "@/lib/checklist";
 import { PRIORITY_TONE } from "@/components/priority";
+/** Ticks in either run, so undoing a Reset never drops a tick made after it. */
+const mergeTicks = (earlier: boolean[][] | null, later: boolean[][]) => (earlier ? later.map((row, i) => row.map((value, j) => value || Boolean(earlier[i]?.[j]))) : later);
 const label = (value: string) => value[0].toUpperCase() + value.slice(1);
 
 /** One checklist as a list row: title, description, category · checks, priority pill, chevron. */
@@ -74,9 +76,11 @@ export function ChecklistIndex({ checklists }: { checklists: Checklist[] }) {
 export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
   const sections = useMemo(() => checklist.items.map((section) => section.slice(1)), [checklist.items]);
   const blank = useMemo(() => sections.map((section) => section.map(() => false)), [sections]);
-  const [checked, setChecked] = useState<boolean[][]>(blank);
+  // The ticks and the Undo snapshot live in one state, so Reset and Undo each read and write both in a
+  // single update (never a stale render copy).
+  const [run, setRun] = useState<{ checked: boolean[][]; undo: boolean[][] | null }>({ checked: blank, undo: null });
+  const { checked, undo } = run;
   const [ready, setReady] = useState(false);
-  const [undo, setUndo] = useState<boolean[][] | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [toastFocused, setToastFocused] = useState(false);
   const undoRef = useRef<HTMLButtonElement>(null);
@@ -95,7 +99,7 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
         const restored = restoreProgress(JSON.parse(saved) as unknown, sections.map((section) => section.length));
         if (restored) {
           // eslint-disable-next-line react-hooks/set-state-in-effect
-          setChecked(restored);
+          setRun((current) => ({ ...current, checked: restored }));
         } else {
           localStorage.removeItem(storageKey);
         }
@@ -115,7 +119,7 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
   // The toast closes after 8 s, but never while it holds focus (it would drop the keyboard user).
   useEffect(() => {
     if (!undo || toastFocused) return;
-    const timer = window.setTimeout(() => setUndo(null), 8000);
+    const timer = window.setTimeout(() => setRun((current) => ({ ...current, undo: null })), 8000);
     return () => window.clearTimeout(timer);
   }, [undo, toastFocused]);
 
@@ -130,16 +134,16 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
   const progress = progressPercent(complete, total);
 
   function toggle(sectionIndex: number, itemIndex: number) {
-    setChecked((current) => current.map((row, rowIndex) => rowIndex === sectionIndex ? row.map((value, valueIndex) => valueIndex === itemIndex ? !value : value) : row));
+    setRun((current) => ({ ...current, checked: current.checked.map((row, rowIndex) => rowIndex === sectionIndex ? row.map((value, valueIndex) => valueIndex === itemIndex ? !value : value) : row) }));
   }
   function reset() {
-    setUndo(checked);
-    setChecked(blank);
+    // A second Reset inside the Undo window keeps the first one's ticks in the snapshot too.
+    setRun((current) => ({ checked: blank, undo: mergeTicks(current.undo, current.checked) }));
     setAnnouncement("Run reset. Undo is available for a few seconds.");
   }
   function restore() {
-    if (undo) setChecked(undo);
-    setUndo(null);
+    // Undo only the Reset: bring the earlier ticks back and keep any ticks made since.
+    setRun((current) => ({ checked: mergeTicks(current.undo, current.checked), undo: null }));
     setToastFocused(false);
     setAnnouncement("Run restored.");
     focusResetNext.current = true;
@@ -155,6 +159,22 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
         <button ref={resetRef} type="button" className="as-plain" onClick={reset} disabled={complete === 0}>Reset</button>
         <div className="as-progress" role="progressbar" aria-label={`${progress}% complete`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div>
       </div>
+      {/* Right after Reset in the DOM (it is shown fixed at the bottom), so Tab from Undo goes on to
+          the first check instead of jumping past the whole list. */}
+      <p className="as-sr" role="status" aria-live="polite">{announcement}</p>
+      {undo ? (
+        <div
+          className="as-toast"
+          role="group"
+          aria-label="Undo reset"
+          onFocus={() => setToastFocused(true)}
+          onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setToastFocused(false); }}
+          onKeyDown={(event) => { if (event.key === "Escape") { setRun((current) => ({ ...current, undo: null })); setToastFocused(false); firstCheck.current?.focus(); } }}
+        >
+          <span>Run reset</span>
+          <button ref={undoRef} type="button" className="as-plain" onClick={restore}>Undo</button>
+        </div>
+      ) : null}
 
       {sections.map((section, sectionIndex) => (
         <section key={sectionIndex} className="as-phase" aria-labelledby={`phase-${sectionIndex}`}>
@@ -179,20 +199,6 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
         </section>
       ))}
 
-      <p className="as-sr" role="status" aria-live="polite">{announcement}</p>
-      {undo ? (
-        <div
-          className="as-toast"
-          role="group"
-          aria-label="Undo reset"
-          onFocus={() => setToastFocused(true)}
-          onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setToastFocused(false); }}
-          onKeyDown={(event) => { if (event.key === "Escape") { setUndo(null); setToastFocused(false); firstCheck.current?.focus(); } }}
-        >
-          <span>Run reset</span>
-          <button ref={undoRef} type="button" className="as-plain" onClick={restore}>Undo</button>
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -137,4 +137,37 @@ describe("review fixes", () => {
     act(() => { vi.advanceTimersByTime(8000); });
     expect($(".as-toast")).toBeNull();
   });
+
+  it("Undo of a Reset keeps ticks made after the Reset", () => {
+    mount(<ChecklistRunner checklist={launch} />);
+    tick("Write notes");
+    act(() => { $<HTMLButtonElement>(".as-progress-card button")!.click(); });
+    tick("Deploy");
+    act(() => { $<HTMLButtonElement>(".as-toast button")!.click(); });
+    expect(stepInput("Write notes").checked).toBe(true);
+    expect(stepInput("Deploy").checked).toBe(true);
+    expect(JSON.parse(localStorage.getItem("checklist-progress-v2-launch")!)).toEqual([[true, false], [true]]);
+  });
+
+  it("a second Reset inside the Undo window keeps the first one's ticks for Undo", () => {
+    mount(<ChecklistRunner checklist={launch} />);
+    tick("Write notes");
+    act(() => { $<HTMLButtonElement>(".as-progress-card button")!.click(); });
+    tick("Book room");
+    act(() => { $<HTMLButtonElement>(".as-progress-card button")!.click(); });
+    expect(host.textContent).toContain("0 of 3 checks clear");
+    act(() => { $<HTMLButtonElement>(".as-toast button")!.click(); });
+    expect(host.textContent).toContain("2 of 3 checks clear");
+  });
+
+  it("the toast sits right after Reset in the DOM, so Tab from Undo reaches the first check", () => {
+    mount(<ChecklistRunner checklist={launch} />);
+    tick("Write notes");
+    act(() => { $<HTMLButtonElement>(".as-progress-card button")!.click(); });
+    const focusable = [...host.querySelectorAll<HTMLElement>("button, input")];
+    const undo = $<HTMLButtonElement>(".as-toast button")!;
+    expect(undo.textContent).toMatch(/^Undo/);
+    expect(focusable[focusable.indexOf(undo) - 1].textContent).toBe("Reset");
+    expect(focusable[focusable.indexOf(undo) + 1]).toBe(stepInput("Write notes"));
+  });
 });
