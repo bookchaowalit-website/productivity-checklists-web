@@ -167,9 +167,6 @@
 @media (forced-colors: active) {
   .as-check input { position: static; width: 24px; height: 24px; opacity: 1; appearance: auto; }
   .as-check span { display: none; }
-  /* Forced colors paint track and fill the same system colour; keep them apart. */
-  .as-progress { forced-color-adjust: none; background: Canvas; border: 1px solid CanvasText; }
-  .as-progress span { background: Highlight; }
 }
 .as-row[data-done="true"] h3 { color: var(--as-muted); text-decoration: line-through; }
 .as-chips { display: flex; flex-wrap: wrap; gap: 12px 24px; }
@@ -205,6 +202,12 @@
 .as-progress-text span { color: var(--as-muted); font-size: 15px; }
 .as-progress { grid-column: 1 / -1; height: 8px; border-radius: 980px; background: var(--as-selected); overflow: hidden; }
 .as-progress span { display: block; height: 100%; border-radius: inherit; background: var(--as-button); transition: width .2s ease; }
+/* Forced colors paint track and fill the same system colour; keep them apart. This block must follow the
+   base .as-progress rules: same specificity, so the later rule wins. */
+@media (forced-colors: active) {
+  .as-progress { forced-color-adjust: none; background: Canvas; border: 1px solid CanvasText; }
+  .as-progress span { background: Highlight; }
+}
 .as-phase h2 { margin: 0 0 8px 4px; font-size: 17px; font-weight: 600; }
 .as-row-step { grid-template-columns: 44px minmax(0, 1fr); }
 .as-row-step h3 { font-weight: 500; }

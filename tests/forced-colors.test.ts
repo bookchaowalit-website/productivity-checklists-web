@@ -23,11 +23,18 @@ describe("round check focus ring", () => {
 });
 
 describe("progress bar in forced colors", () => {
-  it("paints the track and the fill with different system colours", () => {
+  it("paints the track and the fill with different system colours, declared after the base rules", () => {
     const css = readFileSync(`${process.cwd()}/app/app-shell.css`, "utf8");
-    const start = css.indexOf("@media (forced-colors: active)");
-    const block = css.slice(start, css.indexOf("\n}\n", start));
+    const baseTrack = css.indexOf("\n.as-progress {");
+    const baseFill = css.indexOf("\n.as-progress span {");
+    const forced = css.indexOf("@media (forced-colors: active)", Math.max(baseTrack, baseFill));
+    expect(baseTrack).toBeGreaterThan(-1);
+    expect(baseFill).toBeGreaterThan(-1);
+    expect(forced).toBeGreaterThan(-1);
+    const block = css.slice(forced, css.indexOf("\n}\n", forced));
     expect(block).toMatch(/\.as-progress \{[^}]*forced-color-adjust: none[^}]*background: Canvas[^}]*border: 1px solid CanvasText/);
     expect(block).toMatch(/\.as-progress span \{[^}]*background: Highlight/);
+    // No later plain rule may set the progress backgrounds again.
+    expect(css.slice(forced + block.length)).not.toMatch(/\n\.as-progress( span)? \{[^}]*background/);
   });
 });
