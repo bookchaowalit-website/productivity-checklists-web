@@ -119,7 +119,7 @@
 .as-pill[data-tone="grey"] { color: var(--as-grey); background: var(--as-grey-bg); }
 .as-pill[data-tone="red"] { color: var(--as-red); background: var(--as-red-bg); }
 .as-dot[data-tone="red"] { background: #e5484d; }
-.as-empty { padding: 32px 16px; color: var(--as-muted); font-size: 15px; text-align: center; }
+.as-empty { padding: 32px 16px; color: var(--as-muted); font-size: 15px; text-align: center; overflow-wrap: anywhere; }
 .as-empty strong { display: block; margin-bottom: 4px; color: var(--as-fg); font-size: 17px; }
 
 /* Undo toast */

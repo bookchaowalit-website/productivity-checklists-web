@@ -38,3 +38,12 @@ describe("progress bar in forced colors", () => {
     expect(css.slice(forced + block.length)).not.toMatch(/\n\.as-progress( span)? \{[^}]*background/);
   });
 });
+
+describe("empty state wrapping", () => {
+  it("a long unbroken search term wraps inside the no-match box (the list clips overflow)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const css = readFileSync(`${process.cwd()}/app/app-shell.css`, "utf8");
+    const at = css.indexOf(".as-empty {");
+    expect(css.slice(at, css.indexOf("}", at))).toContain("overflow-wrap: anywhere");
+  });
+});

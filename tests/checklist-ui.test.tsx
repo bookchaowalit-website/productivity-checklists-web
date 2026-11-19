@@ -128,15 +128,40 @@ describe("review fixes", () => {
     expect(host.textContent).toContain("1 of 3 checks clear");
   });
 
-  it("the toast stays while Undo has focus and closes once focus leaves", () => {
+  it("after a keyboard Reset, focus moved to Undo by the app does not hold the toast; it expires and focus goes to the first step", () => {
     mount(<ChecklistRunner checklist={launch} />);
     tick("Deploy");
     vi.useFakeTimers();
     act(() => { $<HTMLButtonElement>(".as-progress-card button")!.click(); });
-    act(() => { $<HTMLButtonElement>(".as-toast button")!.focus(); });
+    expect(document.activeElement?.textContent).toBe("Undo");
+    act(() => { vi.advanceTimersByTime(8000); });
+    expect($(".as-toast")).toBeNull();
+    expect(document.activeElement).toBe(stepInput("Write notes"));
+  });
+
+  it("a mouse or touch Reset leaves focus alone and the toast expires after eight seconds", () => {
+    mount(<ChecklistRunner checklist={launch} />);
+    tick("Deploy");
+    vi.useFakeTimers();
+    act(() => { $<HTMLButtonElement>(".as-progress-card button")!.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 })); });
+    expect(document.activeElement?.textContent).not.toBe("Undo");
+    act(() => { vi.advanceTimersByTime(8000); });
+    expect($(".as-toast")).toBeNull();
+  });
+
+  it("the toast holds while the person hovers it or presses a key in it, and resumes when they leave", () => {
+    mount(<ChecklistRunner checklist={launch} />);
+    tick("Deploy");
+    vi.useFakeTimers();
+    act(() => { $<HTMLButtonElement>(".as-progress-card button")!.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 })); });
+    act(() => { $(".as-toast")!.dispatchEvent(new PointerEvent("pointerover", { bubbles: true })); $(".as-toast")!.dispatchEvent(new PointerEvent("pointerenter")); });
     act(() => { vi.advanceTimersByTime(9000); });
     expect($(".as-toast")).not.toBeNull();
-    act(() => { stepInput("Deploy").focus(); });
+    act(() => { $(".as-toast")!.dispatchEvent(new PointerEvent("pointerout", { bubbles: true })); $(".as-toast")!.dispatchEvent(new PointerEvent("pointerleave")); });
+    act(() => { $(".as-toast button")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true })); });
+    act(() => { vi.advanceTimersByTime(9000); });
+    expect($(".as-toast")).not.toBeNull();
+    act(() => { $<HTMLButtonElement>(".as-toast button")!.focus(); stepInput("Deploy").focus(); });
     act(() => { vi.advanceTimersByTime(8000); });
     expect($(".as-toast")).toBeNull();
   });

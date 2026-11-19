@@ -82,8 +82,14 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
   const { checked, undo } = run;
   const [ready, setReady] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const [toastFocused, setToastFocused] = useState(false);
+  // The countdown pauses only for the person: a pointer resting on the toast, or focus/keys they moved there
+  // themselves. Focus the app moves to Undo after a keyboard Reset does not pause it.
+  const [hovered, setHovered] = useState(false);
+  const [userFocused, setUserFocused] = useState(false);
   const undoRef = useRef<HTMLButtonElement>(null);
+  const toastRef = useRef<HTMLDivElement>(null);
+  const focusUndoNext = useRef(false);
+  const programmaticFocus = useRef(false);
   const resetRef = useRef<HTMLButtonElement>(null);
   // Reset is disabled until the restored ticks render, so focus it after that render, not inline.
   const focusResetNext = useRef(false);
@@ -115,13 +121,27 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
     } catch { /* Storage can be full or blocked; the run still works in memory. */ }
   }, [checked, ready, storageKey]);
 
-  useEffect(() => { if (undo) undoRef.current?.focus(); }, [undo]);
-  // The toast closes after 8 s, but never while it holds focus (it would drop the keyboard user).
+  // Only a keyboard Reset moves focus to Undo (the focused Reset button turns disabled); a click or tap leaves
+  // focus alone, so the toast simply counts down.
   useEffect(() => {
-    if (!undo || toastFocused) return;
-    const timer = window.setTimeout(() => setRun((current) => ({ ...current, undo: null })), 8000);
+    if (!undo || !focusUndoNext.current) return;
+    focusUndoNext.current = false;
+    programmaticFocus.current = true;
+    undoRef.current?.focus();
+    programmaticFocus.current = false;
+  }, [undo]);
+  // The toast closes after 8 s unless the person is using it (hover, or focus/keys of their own). If focus was
+  // still inside when it closes, it moves to the first step so the keyboard user is not dropped on <body>.
+  useEffect(() => {
+    if (!undo || hovered || userFocused) return;
+    const timer = window.setTimeout(() => {
+      const hadFocus = toastRef.current?.contains(document.activeElement) ?? false;
+      setRun((current) => ({ ...current, undo: null }));
+      setHovered(false);
+      if (hadFocus) firstCheck.current?.focus();
+    }, 8000);
     return () => window.clearTimeout(timer);
-  }, [undo, toastFocused]);
+  }, [undo, hovered, userFocused]);
 
   useEffect(() => {
     if (!focusResetNext.current) return;
@@ -136,7 +156,8 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
   function toggle(sectionIndex: number, itemIndex: number) {
     setRun((current) => ({ ...current, checked: current.checked.map((row, rowIndex) => rowIndex === sectionIndex ? row.map((value, valueIndex) => valueIndex === itemIndex ? !value : value) : row) }));
   }
-  function reset() {
+  function reset(viaKeyboard: boolean) {
+    focusUndoNext.current = viaKeyboard;
     // A second Reset inside the Undo window keeps the first one's ticks in the snapshot too.
     setRun((current) => ({ checked: blank, undo: mergeTicks(current.undo, current.checked) }));
     setAnnouncement("Run reset. Undo is available for a few seconds.");
@@ -144,7 +165,8 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
   function restore() {
     // Undo only the Reset: bring the earlier ticks back and keep any ticks made since.
     setRun((current) => ({ checked: mergeTicks(current.undo, current.checked), undo: null }));
-    setToastFocused(false);
+    setUserFocused(false);
+    setHovered(false);
     setAnnouncement("Run restored.");
     focusResetNext.current = true;
   }
@@ -156,7 +178,7 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
           <strong>{progress}%</strong>
           <span aria-live="polite">{checksLabel(complete, total)}</span>
         </div>
-        <button ref={resetRef} type="button" className="as-plain" onClick={reset} disabled={complete === 0}>Reset</button>
+        <button ref={resetRef} type="button" className="as-plain" onClick={(event) => reset(event.detail === 0)} disabled={complete === 0}>Reset</button>
         <div className="as-progress" role="progressbar" aria-label={`${progress}% complete`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div>
       </div>
       {/* Right after Reset in the DOM (it is shown fixed at the bottom), so Tab from Undo goes on to
@@ -164,12 +186,19 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
       <p className="as-sr" role="status" aria-live="polite">{announcement}</p>
       {undo ? (
         <div
+          ref={toastRef}
           className="as-toast"
           role="group"
           aria-label="Undo reset"
-          onFocus={() => setToastFocused(true)}
-          onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setToastFocused(false); }}
-          onKeyDown={(event) => { if (event.key === "Escape") { setRun((current) => ({ ...current, undo: null })); setToastFocused(false); firstCheck.current?.focus(); } }}
+          onPointerEnter={() => setHovered(true)}
+          onPointerLeave={() => setHovered(false)}
+          onFocus={() => { if (!programmaticFocus.current) setUserFocused(true); }}
+          onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setUserFocused(false); }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") { setRun((current) => ({ ...current, undo: null })); setUserFocused(false); setHovered(false); firstCheck.current?.focus(); return; }
+            // A key pressed in the toast is the person using it: hold the countdown.
+            setUserFocused(true);
+          }}
         >
           <span>Run reset</span>
           <button ref={undoRef} type="button" className="as-plain" onClick={restore}>Undo</button>
