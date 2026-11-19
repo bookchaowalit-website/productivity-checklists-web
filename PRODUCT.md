@@ -14,8 +14,8 @@ The owner running a repeatable procedure (launch, content, interview), and a por
 
 ## What works today
 
-1. Home lists the three procedures by priority (high first) with check counts; `/checklists` searches titles,
-   categories, descriptions and single checks.
+1. Home lists the three procedures by priority (high first) with check counts and searches titles, categories,
+   descriptions and single checks; the old `/checklists` index redirects (308) to it.
 2. `/checklists/<slug>` shows phases and checks; ticks persist per checklist in `localStorage`, saved progress is
    restored only when it still matches the phases, the meter never reads 100% with open checks, and "Reset run" clears.
 3. `/api/mcp` answers JSON-RPC with `list_checklists`, `get_checklist` (by slug; unknown or unsafe slugs are an error)

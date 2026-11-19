@@ -7,7 +7,11 @@ const nextConfig: NextConfig = {
   },
   // The old portfolio link page now lives on the main site.
   async redirects() {
-    return [{ source: "/more-projects", destination: "https://bookchaowalit.com/", permanent: true }];
+    return [
+      { source: "/more-projects", destination: "https://bookchaowalit.com/", permanent: true },
+      // The home page is the one checklist index; /checklists showed the same list.
+      { source: "/checklists", destination: "/", permanent: true },
+    ];
   },
 };
 

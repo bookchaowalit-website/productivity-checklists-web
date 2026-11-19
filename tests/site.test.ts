@@ -15,6 +15,7 @@ describe("robots and sitemap", () => {
   it("sitemap.xml lists the home page and every checklist page", async () => {
     const urls = (await sitemap()).map((entry) => entry.url);
     expect(urls).toContain(SITE_URL);
+    expect(urls).not.toContain(`${SITE_URL}/checklists`);
     for (const slug of ["content-creation", "job-interview", "project-launch"]) expect(urls).toContain(`${SITE_URL}/checklists/${slug}`);
   });
 });

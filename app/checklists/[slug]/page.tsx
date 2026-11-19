@@ -30,7 +30,7 @@ export default async function ChecklistPage({ params }: { params: Promise<{ slug
   const count = countChecks(checklist);
   const label = (value: string) => value[0].toUpperCase() + value.slice(1);
   return (
-    <PageFrame back={{ href: "/checklists", label: "All checklists" }}>
+    <PageFrame back={{ href: "/", label: "All checklists" }}>
       <header className="as-intro">
         <p className="as-eyebrow">{label(checklist.category)} · {count} {count === 1 ? "check" : "checks"} in {checklist.items.length} {checklist.items.length === 1 ? "phase" : "phases"}</p>
         <h1>{checklist.title}</h1>

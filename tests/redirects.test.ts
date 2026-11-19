@@ -6,4 +6,9 @@ describe("next.config redirects", () => {
     const redirects = await nextConfig.redirects!();
     expect(redirects).toContainEqual({ source: "/more-projects", destination: "https://bookchaowalit.com/", permanent: true });
   });
+
+  it("folds the old /checklists index into the home page", async () => {
+    const redirects = await nextConfig.redirects!();
+    expect(redirects).toContainEqual({ source: "/checklists", destination: "/", permanent: true });
+  });
 });

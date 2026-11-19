@@ -17,7 +17,7 @@ export function ChecklistRow({ checklist }: { checklist: Checklist }) {
     <li>
       <Link href={`/checklists/${checklist.slug}`} className="as-row as-row-link">
         <div>
-          <h3>{checklist.title}</h3>
+          <h2>{checklist.title}</h2>
           <p>{checklist.description}</p>
           <p className="as-row-meta">{label(checklist.category)} · {count} {count === 1 ? "check" : "checks"}</p>
         </div>
@@ -178,7 +178,11 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
 
       {sections.map((section, sectionIndex) => (
         <section key={sectionIndex} className="as-phase" aria-labelledby={`phase-${sectionIndex}`}>
-          <h2 id={`phase-${sectionIndex}`}>{checklist.items[sectionIndex]?.[0] || `Phase ${sectionIndex + 1}`}</h2>
+          <h2 id={`phase-${sectionIndex}`}>
+            {checklist.items[sectionIndex]?.[0] || `Phase ${sectionIndex + 1}`}
+            {/* Per-phase progress stays in view as the reader scrolls past the top progress card. */}
+            <span className="as-phase-count"> · {checked[sectionIndex]?.filter(Boolean).length ?? 0}/{section.length}<span className="as-sr"> done</span></span>
+          </h2>
           <ul className="as-list">
             {section.map((item, itemIndex) => {
               const done = checked[sectionIndex]?.[itemIndex] ?? false;

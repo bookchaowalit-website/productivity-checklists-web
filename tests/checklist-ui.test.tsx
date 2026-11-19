@@ -41,10 +41,13 @@ afterEach(() => {
 describe("ChecklistIndex", () => {
   it("lists every checklist with a priority pill and filters by search, with a no-match state", () => {
     mount(<ChecklistIndex checklists={[launch, interview]} />);
-    expect([...host.querySelectorAll(".as-row h3")].map((h) => h.textContent)).toEqual(["Project Launch", "Job Interview"]);
+    expect([...host.querySelectorAll(".as-row h2")].map((h) => h.textContent)).toEqual(["Project Launch", "Job Interview"]);
     expect($('a[href="/checklists/launch"] .as-pill')!.textContent).toBe("High");
+    // High is amber (red reads as an error in the sibling apps); Medium is grey.
+    expect($('a[href="/checklists/launch"] .as-pill')!.getAttribute("data-tone")).toBe("amber");
+    expect($('a[href="/checklists/interview"] .as-pill')!.getAttribute("data-tone")).toBe("grey");
     type($<HTMLInputElement>("input[type=search]")!, "posting");
-    expect([...host.querySelectorAll(".as-row h3")].map((h) => h.textContent)).toEqual(["Job Interview"]);
+    expect([...host.querySelectorAll(".as-row h2")].map((h) => h.textContent)).toEqual(["Job Interview"]);
     expect(host.textContent).toContain("1 of 2 checklists matching “posting”");
     type($<HTMLInputElement>("input[type=search]")!, "zzz");
     expect(host.textContent).toContain("Nothing matches");
@@ -53,7 +56,7 @@ describe("ChecklistIndex", () => {
     act(() => { clear.click(); });
     expect(search.value).toBe("");
     expect(document.activeElement).toBe(search);
-    expect(host.querySelectorAll(".as-row h3")).toHaveLength(2);
+    expect(host.querySelectorAll(".as-row h2")).toHaveLength(2);
     expect(host.textContent).not.toContain("Nothing matches");
   });
 
@@ -169,5 +172,16 @@ describe("review fixes", () => {
     expect(undo.textContent).toMatch(/^Undo/);
     expect(focusable[focusable.indexOf(undo) - 1].textContent).toBe("Reset");
     expect(focusable[focusable.indexOf(undo) + 1]).toBe(stepInput("Write notes"));
+  });
+});
+
+describe("phase progress", () => {
+  it("each phase heading counts its own ticks", () => {
+    mount(<ChecklistRunner checklist={launch} />);
+    const heading = () => $("#phase-0")!.textContent;
+    expect(heading()).toBe("Prepare · 0/2 done");
+    tick("Write notes");
+    expect(heading()).toBe("Prepare · 1/2 done");
+    expect($("#phase-1")!.textContent).toBe("Ship · 0/1 done");
   });
 });

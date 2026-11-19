@@ -1,7 +1,6 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Home from "@/app/page";
-import ChecklistsPage from "@/app/checklists/page";
 import ChecklistPage, { generateStaticParams } from "@/app/checklists/[slug]/page";
 import { getAllChecklists } from "@/lib/mdx";
 
@@ -15,9 +14,10 @@ describe("pages render the real MDX shelf", () => {
     expect(html).toContain("progress stays in this browser");
   });
 
-  it("the route book index renders and every slug has a static page", async () => {
-    const html = renderToString(await ChecklistsPage());
-    expect(html).toContain("<h1>All checklists</h1>");
+  it("every slug has a static page, and checklist pages lead back to the home index", async () => {
+    const page = renderToString(await ChecklistPage({ params: Promise.resolve({ slug: "project-launch" }) }));
+    expect(page).toContain('href="/"');
+    expect(page).not.toContain('href="/checklists"');
     const params = await generateStaticParams();
     expect(params.map((param) => param.slug).sort()).toEqual(["content-creation", "job-interview", "project-launch"]);
   });

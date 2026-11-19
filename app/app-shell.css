@@ -111,7 +111,7 @@
 .as-list { margin: 0; padding: 0; list-style: none; border: 1px solid var(--as-line); border-radius: 18px; background: var(--as-surface); box-shadow: var(--as-shadow); overflow: hidden; }
 .as-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 12px 8px 12px 16px; }
 .as-row + .as-row { border-top: 1px solid var(--as-line); }
-.as-row h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.as-row h3, .as-row-link h2 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
 .as-row p { margin: 2px 0 0; color: var(--as-muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 .as-pill { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 980px; font-size: 13px; font-weight: 600; white-space: nowrap; }
 .as-pill[data-tone="green"] { color: var(--as-green); background: var(--as-green-bg); }
@@ -222,3 +222,7 @@
 
 /* The top bar is sticky: keep skip-link targets and keyboard-focused controls clear of it when the page scrolls to them. */
 html { scroll-padding-top: 64px; scroll-padding-bottom: 16px; }
+
+/* 2026-11-19 review: phase counts, and the footer lines up with the 760px page column. */
+.as-phase-count { color: var(--as-muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.as-page + .as-foot { width: min(760px, 100%); }

@@ -8,7 +8,7 @@ Live: https://checklists.bookchaowalit.com (deployed by Vercel CLI; it can lag `
 
 ## What it does
 
-- `/` lists the procedures by priority; `/checklists` searches them; `/checklists/<slug>` runs one.
+- `/` lists the procedures by priority and searches them (`/checklists` redirects there); `/checklists/<slug>` runs one.
 - The runner restores saved ticks only if they still fit the checklist's phases, never shows 100% with open checks,
   and has a reset.
 - `/api/mcp` JSON-RPC tools read the same MDX: `list_checklists`, `get_checklist`, `search_checklists`.
