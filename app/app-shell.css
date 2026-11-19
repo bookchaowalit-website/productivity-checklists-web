@@ -221,7 +221,9 @@
 .as-step-label:hover { background: var(--as-hover); }
 
 /* The top bar is sticky: keep skip-link targets and keyboard-focused controls clear of it when the page scrolls to them. */
-html { scroll-padding-top: 64px; scroll-padding-bottom: 16px; }
+html { scroll-padding-top: 64px; scroll-padding-bottom: calc(16px + var(--as-toast-space, 0px)); }
+/* While the Undo toast shows, the page reserves its height (set from checklist-ui.tsx) so nothing focusable stays under it. */
+.as { padding-bottom: var(--as-toast-space, 0px); }
 
 /* 2026-11-19 review: phase counts, and the footer lines up with the 760px page column. */
 .as-phase-count { color: var(--as-muted); font-weight: 500; font-variant-numeric: tabular-nums; }

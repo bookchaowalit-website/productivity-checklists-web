@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Pill } from "@/components/app-shell";
 import { checksLabel, countChecks, progressPercent, restoreProgress, searchChecklists } from "@/lib/checklist";
 import type { Checklist } from "@/lib/checklist";
@@ -148,6 +148,20 @@ export function ChecklistRunner({ checklist }: { checklist: Checklist }) {
     focusResetNext.current = false;
     resetRef.current?.focus();
   }, [checked]);
+
+  // While the toast shows, reserve its height (plus its 24px offset and a gap) at the bottom of the page and in
+  // scroll-padding, so a link or check focused behind it (e.g. Source in the footer) scrolls clear of it.
+  const toastShown = undo !== null;
+  useLayoutEffect(() => {
+    const toast = toastRef.current;
+    if (!toastShown || !toast) return;
+    const rootStyle = document.documentElement.style;
+    const reserve = () => rootStyle.setProperty("--as-toast-space", `${toast.offsetHeight + 32}px`);
+    reserve();
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(reserve) : null;
+    observer?.observe(toast);
+    return () => { observer?.disconnect(); rootStyle.removeProperty("--as-toast-space"); };
+  }, [toastShown]);
 
   const total = sections.reduce((sum, section) => sum + section.length, 0);
   const complete = checked.reduce((sum, section) => sum + section.filter(Boolean).length, 0);

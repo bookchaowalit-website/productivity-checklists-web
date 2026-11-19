@@ -27,6 +27,17 @@ The owner running a repeatable procedure (launch, content, interview), and a por
 - No template creation, editing, duplication, reordering, subtasks or public share links; content changes need a commit.
 - No account or sync; progress lives in one browser. It does not certify safety or readiness.
 
+## Known limits
+
+- **Held Enter on Reset/Undo:** keyboard Reset moves focus to Undo and Undo returns it to Reset, so holding Enter lets
+  key repeat toggle between clearing and restoring the run; the final state depends on when the key is released
+  (Codex review 2026-11-19, accepted).
+- **Undo countdown while focus rests on Undo:** focus the app moves to Undo after a keyboard Reset does not pause the
+  8-second countdown; only hover, focus the person moves there or a key pressed in the toast does (decided semantics,
+  2026-11-19). A screen-reader user who only listens has 8 seconds.
+- **Repeated Reset announcement:** after the toast expires or is closed, the status region keeps "Undo is available";
+  a second Reset sets the same text, so some screen readers do not announce it again (Codex review P3, accepted).
+
 ## Live URL and deploy state
 
 - Live: https://checklists.bookchaowalit.com (HTTP 200 on 2026-10-23).

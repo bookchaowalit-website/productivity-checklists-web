@@ -210,3 +210,23 @@ describe("phase progress", () => {
     expect($("#phase-1")!.textContent).toBe("Ship · 0/1 done");
   });
 });
+
+describe("toast spacing", () => {
+  it("while the Undo toast shows, the page reserves its height for padding and scroll-padding; closing releases it", () => {
+    mount(<ChecklistRunner checklist={launch} />);
+    tick("Deploy");
+    const space = () => document.documentElement.style.getPropertyValue("--as-toast-space");
+    expect(space()).toBe("");
+    act(() => { $<HTMLButtonElement>(".as-progress-card button")!.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 })); });
+    expect(space()).toMatch(/^\d+px$/);
+    act(() => { $(".as-toast")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
+    expect(space()).toBe("");
+  });
+
+  it("the CSS applies the reserved space to the page bottom and to scroll-padding-bottom", async () => {
+    const { readFileSync } = await import("node:fs");
+    const css = readFileSync(`${process.cwd()}/app/app-shell.css`, "utf8");
+    expect(css).toContain("scroll-padding-bottom: calc(16px + var(--as-toast-space, 0px))");
+    expect(css).toContain(".as { padding-bottom: var(--as-toast-space, 0px); }");
+  });
+});
