@@ -37,6 +37,8 @@ The owner running a repeatable procedure (launch, content, interview), and a por
   2026-11-19). A screen-reader user who only listens has 8 seconds.
 - **Repeated Reset announcement:** after the toast expires or is closed, the status region keeps "Undo is available";
   a second Reset sets the same text, so some screen readers do not announce it again (Codex review P3, accepted).
+- **Focus after Undo expires:** focus moves to the first check of the first phase; a checklist whose first phase has
+  no checks would drop focus to the page instead (none of the published checklists has one; Codex review P3, accepted).
 
 ## Live URL and deploy state
 
