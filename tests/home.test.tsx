@@ -32,10 +32,10 @@ describe("pages render the real MDX shelf", () => {
 });
 
 describe("search over the real MDX keeps the main keywords", () => {
-  it("finds Job Interview Preparation for “technical interview” and Project Launch Checklist for “software”", async () => {
+  it("finds Job Interview Preparation for “technical interviews” and Project Launch Checklist for “software”", async () => {
     const { searchChecklists } = await import("@/lib/checklist");
     const checklists = await getAllChecklists();
-    expect(searchChecklists(checklists, "technical interview").map((c) => c.title)).toContain("Job Interview Preparation");
+    expect(searchChecklists(checklists, "technical interviews").map((c) => c.title)).toContain("Job Interview Preparation");
     expect(searchChecklists(checklists, "software").map((c) => c.title)).toContain("Project Launch Checklist");
   });
 });
